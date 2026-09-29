@@ -9,46 +9,8 @@
 import type { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { isFigureLine } from './markdown';
-import { runFigureCached, type MatchKind } from './figures';
-import { readJSON, writeJSON } from './storage';
-
-export interface LogEntry {
-  /** When the command was committed (ms since 1970). */
-  at: number;
-  line: string;
-  typed: string;
-  command: string | null;
-  match: MatchKind | null;
-  ok: boolean;
-  hint?: string;
-  /** Auto-corrections made, e.g. ["/trinagle → /triangle", "rigth → right"]. */
-  corrections: string[];
-  /** First keystroke to last keystroke on the line. */
-  typingMs: number;
-  /** Time to read the command and draw it. */
-  parseMs: number;
-  /** Number of edits (keystrokes, pastes, expansions) on the line. */
-  edits: number;
-  /** True if this line was committed before and failed then. */
-  fixedByUser: boolean;
-}
-
-const LOG_KEY = 'nt.log';
-const MAX_ENTRIES = 5000;
-
-export function readLog(): LogEntry[] {
-  return readJSON<LogEntry[]>(LOG_KEY, []);
-}
-
-export function clearLog(): void {
-  writeJSON(LOG_KEY, []);
-}
-
-function append(entry: LogEntry): void {
-  const log = readLog();
-  log.push(entry);
-  writeJSON(LOG_KEY, log.slice(-MAX_ENTRIES));
-}
+import { runFigureCached } from './figures';
+import { appendLog } from './logStore';
 
 interface Active {
   pos: number;        // start of the line being edited (kept up to date as text changes)
@@ -74,7 +36,7 @@ export function usageTracker(): Extension {
     const corrections = run.output.ok
       ? run.output.notes.filter((n) => n.includes('→'))
       : [];
-    append({
+    appendLog({
       at: Date.now(),
       line: line.text.trim(),
       typed: run.typed,

@@ -1,9 +1,9 @@
 // The hidden /stats page: what the usage log says about the prototype's
 // two questions. Everything here is read from this browser's localStorage.
 
-import { readLog, clearLog, type LogEntry } from './usageLog';
+import { readLog, clearLog, type LogEntry } from './logStore';
 import { downloadFile } from './storage';
-import { escapeHtml } from './markdown';
+import { escapeHtml } from './html';
 
 const BUDGET_MS = 10;
 

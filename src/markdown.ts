@@ -3,6 +3,9 @@
 // math, and figure command lines (lines starting with "/").
 
 import katex from 'katex';
+import { escapeHtml } from './html';
+
+export { escapeHtml };
 
 export type BlockKind = 'heading' | 'para' | 'list' | 'quote' | 'math' | 'figure' | 'rule';
 
@@ -89,9 +92,6 @@ function startsParagraphLine(line: string): boolean {
 // ---------------------------------------------------------------------------
 // Rendering
 
-export function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-}
 
 export function renderMath(tex: string, displayMode: boolean): string {
   return katex.renderToString(tex, { displayMode, throwOnError: false, strict: 'ignore', output: 'html' });

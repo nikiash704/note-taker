@@ -51,6 +51,18 @@ describe('figure commands', () => {
     ]) expect(ok(line).output.ok).toBe(true);
   });
 
+  it('draws the README examples', () => {
+    for (const line of [
+      '/plot x^2, 2x+1 [-3, 3]', '/graph cos x -pi..pi',
+      '/axes -3..3', '/axes x -2..4 y -1..3', '/axes A(1,2) B(3,-1)',
+      '/vec u=(2,3) v=(-1,2)', '/vec (1,1) -> (3,2)',
+      '/triangle PQR isosceles at P', '/triangle ABC right at C a=3 b=4', '/triangle ABC AB=5 BC=7 CA=6 A=60',
+      '/interval (-inf, 2] U (3, 5]', '/interval 0 <= x < pi',
+      '/diagram A -f-> B; A -g-> C; B -h-> D; C -k-> D',
+      '/trinagle ABC rigth at C a=3 b=4', '/interval [0,1) U (2, inf)',
+    ]) expect(ok(line).output.ok).toBe(true);
+  });
+
   it('gives quiet hints for things it cannot draw', () => {
     const run = runFigure('/triangle ABC right at D');
     expect(run.output.ok).toBe(false);
