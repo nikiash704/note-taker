@@ -1,6 +1,7 @@
 import 'katex/dist/katex.min.css';
 import './style.css';
 import { createEditor } from './editor';
+import { equationShortcuts } from './shortcuts';
 import { Preview } from './preview';
 import { loadNote, saveNote, downloadFile } from './storage';
 import { escapeHtml } from './markdown';
@@ -62,6 +63,7 @@ const editor = createEditor({
   parent: document.querySelector('#editor')!,
   doc: loadNote() ?? WELCOME_NOTE,
   onChange: scheduleRender,
+  extensions: [equationShortcuts()],
   onCursorLine: (line) => {
     cursorLine = line;
     preview.follow(line);
@@ -101,3 +103,7 @@ document.querySelector<HTMLInputElement>('#open')!.addEventListener('change', as
   input.value = '';
   editor.focus();
 });
+
+if (import.meta.env.DEV) {
+  import('./devtools').then(({ installDevtools }) => installDevtools(editor));
+}
