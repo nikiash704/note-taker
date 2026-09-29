@@ -4,7 +4,7 @@ import { createEditor } from './editor';
 import { equationShortcuts } from './shortcuts';
 import { Preview } from './preview';
 import { loadNote, saveNote, downloadFile } from './storage';
-import { escapeHtml } from './markdown';
+import { figureElement } from './figures/element';
 import { WELCOME_NOTE } from './welcome';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -26,14 +26,7 @@ app.innerHTML = `
 
 const status = document.querySelector<HTMLSpanElement>('#status')!;
 
-function renderFigurePlaceholder(line: string): HTMLElement {
-  const el = document.createElement('figure');
-  el.className = 'figure';
-  el.innerHTML = `<code>${escapeHtml(line)}</code>`;
-  return el;
-}
-
-const preview = new Preview(document.querySelector('#preview')!, renderFigurePlaceholder, (line) => {
+const preview = new Preview(document.querySelector('#preview')!, figureElement, (line) => {
   const pos = editor.state.doc.line(Math.min(line, editor.state.doc.lines)).from;
   editor.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
   editor.focus();
