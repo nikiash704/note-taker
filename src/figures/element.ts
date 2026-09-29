@@ -1,14 +1,14 @@
 // Turns a figure command line into the element shown in the preview:
 // the drawing plus a download button, or a quiet hint.
 
-import { runFigure } from './index';
+import { runFigureCached } from './index';
 import { downloadFile } from '../storage';
 import { escapeHtml } from '../markdown';
 
 let downloads = 0;
 
 export function figureElement(line: string): HTMLElement {
-  const run = runFigure(line);
+  const run = runFigureCached(line);
   const el = document.createElement('figure');
   el.className = 'figure';
 

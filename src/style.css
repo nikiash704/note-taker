@@ -89,6 +89,9 @@ body {
 .cm-placeholder { color: var(--faint); }
 .cm-math { color: var(--math); background: var(--math-bg); border-radius: 3px; }
 .cm-figure-line { color: var(--figure); font-weight: 600; }
+.cm-fig-hint { font: 12px var(--sans); margin-left: 12px; font-weight: 400; pointer-events: none; }
+.cm-fig-hint-fix { color: var(--faint); }
+.cm-fig-hint-problem { color: var(--hint); }
 
 /* ---- Rendered notes ---- */
 .paper { max-width: 760px; margin: 0 auto; font-family: var(--serif); font-size: 17px; line-height: 1.6; }

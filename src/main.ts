@@ -2,6 +2,7 @@ import 'katex/dist/katex.min.css';
 import './style.css';
 import { createEditor } from './editor';
 import { equationShortcuts } from './shortcuts';
+import { figureHints } from './figureHints';
 import { Preview } from './preview';
 import { loadNote, saveNote, downloadFile } from './storage';
 import { figureElement } from './figures/element';
@@ -56,7 +57,7 @@ const editor = createEditor({
   parent: document.querySelector('#editor')!,
   doc: loadNote() ?? WELCOME_NOTE,
   onChange: scheduleRender,
-  extensions: [equationShortcuts()],
+  extensions: [equationShortcuts(), figureHints],
   onCursorLine: (line) => {
     cursorLine = line;
     preview.follow(line);

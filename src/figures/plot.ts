@@ -32,7 +32,12 @@ export const plot: FigureCommand = {
       if (other) parsed = parseExpression(src, { vars: [other[1]], fixName: tools.fixName });
       if (!parsed.ok) return fail(`${parsed.message} in “${src}”. Try: ${plot.example}`);
       notes.push(...parsed.corrections);
-      fns.push({ fn: parsed.fn, label: prettyLabel(src) });
+      // Show the corrected spelling in the legend: "cso x" → "cos x".
+      const fixed = parsed.corrections.reduce((s, c) => {
+        const [from, to] = c.split(' → ');
+        return s.replace(new RegExp(`\\b${from}\\b`, 'i'), to);
+      }, src);
+      fns.push({ fn: parsed.fn, label: prettyLabel(fixed) });
     }
     if (fns.length === 0) return fail(`What should I plot? e.g. ${plot.example}`);
 
