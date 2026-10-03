@@ -26,8 +26,8 @@ const ALL_SYNONYMS: Record<string, string> = {
   inequality: 'region', inequalities: 'region', pregion: 'polarregion', lp: 'feasible', linprog: 'feasible',
   disk: 'ball', disc: 'ball', nbhd: 'ball', neighborhood: 'ball', neighbourhood: 'ball',
   // plane
-  axis: 'axes', grid: 'axes', plane2: 'axes', coords: 'axes', coordinates: 'axes', points: 'axes', point: 'axes',
-  vector: 'vec', vectors2: 'vec', arrow: 'vec', arrows: 'vec',
+  axis: 'axes', grid: 'axes', coords: 'axes', coordinates: 'axes', points: 'axes', point: 'axes',
+  vector: 'vec', arrow: 'vec', arrows: 'vec',
   // 3D
   axes3d: 'axes3', '3d': 'axes3', space: 'axes3', vec3d: 'vec3', vector3: 'vec3',
   surf: 'surface', plot3: 'surface', plot3d: 'surface', level: 'contour', levels: 'contour', levelcurves: 'contour',
@@ -65,7 +65,7 @@ const ALL_SYNONYMS: Record<string, string> = {
   gcd: 'euclid', euclidean: 'euclid', modular: 'clock', newtons: 'newton', fixedpoint: 'cobweb', iteration: 'cobweb',
   bisect: 'bisection', interp: 'interpolate', lagrange: 'interpolate',
   // number line and diagrams (from before)
-  numberline: 'interval', 'number-line': 'interval', nl: 'interval', range: 'interval', set: 'interval', ineq: 'interval',
+  numberline: 'interval', 'number-line': 'interval', nl: 'interval', range: 'interval', ineq: 'interval',
   diag: 'diagram', flow: 'diagram', chain: 'diagram', cd: 'diagram', boxes: 'diagram',
   // blocks
   tab: 'table', derivation: 'align', steps: 'align',

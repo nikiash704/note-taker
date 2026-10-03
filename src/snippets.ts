@@ -24,6 +24,8 @@ interface Rule {
 
 // Not after a letter or backslash: stops "\cdot" turning into "\c" + dot, etc.
 const B = '(?<![A-Za-z\\\\])';
+// Same, and not straight after "{" (so typing \begin{pmatrix} by hand works).
+const BE = '(?<![A-Za-z\\\\{])';
 
 const GREEK: Record<string, string> = {
   a: 'alpha', b: 'beta', g: 'gamma', G: 'Gamma', d: 'delta', D: 'Delta', e: 'epsilon',
@@ -63,7 +65,7 @@ const RULES: Rule[] = [
   // ---- Matrices: mat/pmat → ( ), bmat → [ ], Bmat → { }, vmat → | | ----
   {
     mode: 'math',
-    pattern: new RegExp(`${B}([pbBvV]?)mat$`),
+    pattern: new RegExp(`${BE}([pbBvV]?)mat$`),
     template: (m) => {
       const env = `${m[1] || 'p'}matrix`;
       return `\\begin{${env}} $1 \\end{${env}}$0`;
@@ -102,6 +104,62 @@ const RULES: Rule[] = [
   { mode: 'math', pattern: /(?<!\\)cb$/, template: '^{3}' },
   { mode: 'math', pattern: /(?<!\\)rd$/, template: '^{$1}$0' },
   { mode: 'math', pattern: /__$/, template: '_{$1}$0' },
+
+  // ---- More environments ----
+  { mode: 'math', pattern: new RegExp(`${BE}cases$`), template: '\\begin{cases} $1 \\end{cases}$0' },
+  { mode: 'math', pattern: new RegExp(`${BE}align$`), template: '\\begin{aligned} $1 \\end{aligned}$0' },
+
+  // ---- Calculus ----
+  { mode: 'math', pattern: new RegExp(`${B}par$`), template: '\\frac{\\partial $1}{\\partial $2}$0' },
+  { mode: 'math', pattern: new RegExp(`${B}dd([xyzt])$`), template: (m) => `\\frac{d}{d${m[1]}}` },
+  { mode: 'math', pattern: new RegExp(`${B}(nabla|grad)$`), template: '\\nabla' },
+  { mode: 'math', pattern: new RegExp(`${B}div$`), template: '\\nabla \\cdot ' },
+  { mode: 'math', pattern: new RegExp(`${B}curl$`), template: '\\nabla \\times ' },
+
+  // ---- Delimiters ----
+  { mode: 'math', pattern: new RegExp(`${B}norm$`), template: '\\left\\| $1 \\right\\|$0' },
+  { mode: 'math', pattern: new RegExp(`${B}abs$`), template: '\\left| $1 \\right|$0' },
+  { mode: 'math', pattern: new RegExp(`${B}ceil$`), template: '\\lceil $1 \\rceil$0' },
+  { mode: 'math', pattern: new RegExp(`${B}floor$`), template: '\\lfloor $1 \\rfloor$0' },
+  { mode: 'math', pattern: /<<$/, template: '\\langle ' },
+  { mode: 'math', pattern: />>$/, template: '\\rangle ' },
+  { mode: 'math', pattern: new RegExp(`${B}binom$`), template: '\\binom{$1}{$2}$0' },
+
+  // ---- Sets and relations ----
+  { mode: 'math', pattern: new RegExp(`${B}sub$`), template: '\\subseteq' },
+  { mode: 'math', pattern: new RegExp(`${B}sps$`), template: '\\supseteq' },
+  { mode: 'math', pattern: new RegExp(`${B}(cup|cap|oplus|otimes|circ|propto|approx|equiv|sim)$`), template: (m) => `\\${m[1]}` },
+  { mode: 'math', pattern: new RegExp(`${B}empty$`), template: '\\emptyset' },
+  { mode: 'math', pattern: new RegExp(`${B}sm$`), template: '\\setminus ' },
+  { mode: 'math', pattern: /===$/, template: '\\equiv' },
+  { mode: 'math', pattern: /~~$/, template: '\\approx' },
+  { mode: 'math', pattern: new RegExp(`${B}pmod$`), template: '\\pmod{$1}$0' },
+  { mode: 'math', pattern: new RegExp(`${B}mod$`), template: '\\bmod ' },
+  { mode: 'math', pattern: new RegExp(`${B}iso$`), template: '\\cong' },
+  { mode: 'math', pattern: new RegExp(`${B}nsub$`), template: '\\trianglelefteq' },
+  { mode: 'math', pattern: /\|->$/, template: '\\mapsto' },
+  { mode: 'math', pattern: new RegExp(`${B}inj$`), template: '\\hookrightarrow' },
+  { mode: 'math', pattern: new RegExp(`${B}surj$`), template: '\\twoheadrightarrow' },
+  { mode: 'math', pattern: new RegExp(`${B}iid$`), template: '\\overset{\\text{iid}}{\\sim}' },
+
+  // ---- Linear algebra ----
+  { mode: 'math', pattern: /(?<!\\)inv$/, template: '^{-1}' },
+  { mode: 'math', pattern: /(?<!\\)tp$/, template: '^{\\top}' },
+  { mode: 'math', pattern: /(?<!\\)dag$/, template: '^{\\dagger}' },
+  { mode: 'math', pattern: new RegExp(`${B}(tr|rank|ker|span|Re|Im|Var|Cov)$`), template: (m) => `\\operatorname{${m[1]}}` },
+  { mode: 'math', pattern: new RegExp(`${B}Int$`), template: '\\operatorname{int}' },
+
+  // ---- Analysis, complex numbers, probability ----
+  { mode: 'math', pattern: new RegExp(`${B}lsup$`), template: '\\limsup_{${1:n \\to \\infty}} $0' },
+  { mode: 'math', pattern: new RegExp(`${B}linf$`), template: '\\liminf_{${1:n \\to \\infty}} $0' },
+  { mode: 'math', pattern: new RegExp(`${B}(sup|inf|arg|Pr)$`), template: (m) => `\\${m[1]}` },
+  { mode: 'math', pattern: new RegExp(`${B}(conj|cl)$`), template: '\\overline{$1}$0' },
+  { mode: 'math', pattern: new RegExp(`${B}EV$`), template: '\\mathbb{E}\\left[ $1 \\right]$0' },
+
+  // ---- Fonts ----
+  { mode: 'math', pattern: new RegExp(`${B}bf$`), template: '\\mathbf{$1}$0' },
+  { mode: 'math', pattern: new RegExp(`${B}cal$`), template: '\\mathcal{$1}$0' },
+  { mode: 'math', pattern: new RegExp(`${B}frak$`), template: '\\mathfrak{$1}$0' },
 ];
 
 /**
@@ -110,7 +168,10 @@ const RULES: Rule[] = [
  * just typed already on the end.
  */
 export function findExpansion(before: string, mode: Mode): Expansion | null {
+  // Nothing fires inside \text{…}: that's words, not maths.
+  if (mode === 'math' && /\\(text|mathrm|operatorname)\{[^}]*$/.test(before)) return null;
   if (mode === 'math' && before.endsWith('/')) return fraction(before);
+  if (mode === 'math' && before.endsWith('|->')) return { length: 3, template: '\\mapsto' };
   for (const rule of RULES) {
     if (rule.mode !== mode) continue;
     const m = before.match(rule.pattern);

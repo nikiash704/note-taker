@@ -72,3 +72,36 @@ describe('equation shortcuts', () => {
     expect(t.stops[2].from).toBe(t.text.length);
   });
 });
+
+describe('more shortcuts', () => {
+  it('calculus and delimiters', () => {
+    expect(expand('par')).toBe('\\frac{\\partial }{\\partial }');
+    expect(expand('ddx')).toBe('\\frac{d}{dx}');
+    expect(expand('grad')).toBe('\\nabla');
+    expect(expand('norm')).toBe('\\left\\|  \\right\\|');
+    expect(expand('binom')).toBe('\\binom{}{}');
+  });
+  it('sets, relations, algebra', () => {
+    expect(expand('A sub')).toBe('A \\subseteq');
+    expect(expand('A cup')).toBe('A \\cup');
+    expect(expand('a ===')).toBe('a \\equiv');
+    expect(expand('x |->')).toBe('x \\mapsto');
+    expect(expand('Ainv')).toBe('A^{-1}');
+    expect(expand('Atp')).toBe('A^{\\top}');
+    expect(expand('ker')).toBe('\\operatorname{ker}');
+    expect(expand('sup')).toBe('\\sup');
+    expect(expand('EV')).toBe('\\mathbb{E}\\left[  \\right]');
+  });
+  it('typing infty still works through inf', () => {
+    expect(expand('inf')).toBe('\\inf');
+  });
+  it('does not fire inside \\text{} or \\begin{}', () => {
+    expect(expand('\\text{the sub')).toBeNull();
+    expect(expand('\\begin{pmat')).toBeNull();
+    expect(expand('\\begin{cases')).toBeNull();
+  });
+});
+
+describe('does not break common exponents', () => {
+  it('e^{imx} stays as typed', () => expect(expand('e^{im')).toBeNull());
+});

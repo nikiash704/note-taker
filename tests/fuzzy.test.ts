@@ -43,3 +43,22 @@ describe('command names', () => {
     expect((performance.now() - start) / 100).toBeLessThan(10);
   });
 });
+
+describe('typos across the whole command list', () => {
+  const name = (typed: string) => resolveCommand(typed)?.command.name ?? null;
+  it('lands on the intended command', () => {
+    expect(name('dits')).toBe('dist');
+    expect(name('hsit')).toBe('hist');
+    expect(name('cicrle')).toBe('circle');
+    expect(name('polgyon')).toBe('polygon');
+    expect(name('matirx')).toBe('matrix');
+    expect(name('eigne')).toBe('eigen');
+    expect(name('surfcae')).toBe('surface');
+    expect(name('slopfield')).toBe('slopefield');
+    expect(name('truthtabel')).toBe('truthtable');
+  });
+  it('refuses to guess between close names', () => {
+    expect(name('dex')).toBeNull(); // def or det?
+  });
+});
+
