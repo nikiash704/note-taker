@@ -8,7 +8,7 @@ import { suggestions, computeField, setCompute } from './suggestions';
 import { Preview } from './preview';
 import { loadNote, saveNote, downloadFile } from './storage';
 import { figureElement } from './figures/element';
-import { cheatSheetHtml } from './cheatSheet';
+import { cheatSheetHtml, wireCheatSheet } from './cheatSheet';
 import { WELCOME_NOTE } from './welcome';
 
 export function startNotes(app: HTMLElement): void {
@@ -106,6 +106,7 @@ export function startNotes(app: HTMLElement): void {
   // The cheat sheet slides over the preview; it never takes focus from the editor.
   const help = app.querySelector<HTMLButtonElement>('#help')!;
   const cheat = app.querySelector<HTMLElement>('#cheat')!;
+  wireCheatSheet(cheat);
   function toggleHelp() {
     cheat.hidden = !cheat.hidden;
     help.classList.toggle('on', !cheat.hidden);

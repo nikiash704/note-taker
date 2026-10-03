@@ -166,8 +166,15 @@ body {
 .cheat dt { margin-top: 8px; }
 .cheat dd { margin: 2px 0 0; color: var(--muted); }
 .cheat .katex { font-size: 1.05em; color: var(--ink); }
-.cheat dl.compact { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+.cheat dl.compact .cheat-cmd { display: grid; grid-template-columns: 9.5em 1fr; gap: 10px; margin: 4px 0; }
 .cheat dl.compact dt, .cheat dl.compact dd { margin: 0; }
+.cheat pre { font: 12px/1.45 var(--mono); background: var(--accent-soft); padding: 5px 8px; border-radius: 6px; margin: 0; white-space: pre-wrap; }
+.cheat .cheat-cmd[hidden], .cheat .cheat-area[hidden] { display: none; }
+.cheat-search { width: 100%; margin: 10px 0 2px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--ink); font: 13px var(--sans); }
+.cheat-how { padding-left: 18px; margin: 4px 0; color: var(--muted); }
+.cheat-how li { margin: 3px 0; }
+.cheat kbd { font: 600 11px var(--sans); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--bg); }
+.cheat a { color: var(--accent); }
 .cheat code { font-family: var(--mono); font-size: 12px; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
 .muted { color: var(--faint); }
 
