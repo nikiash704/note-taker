@@ -6,7 +6,7 @@
 // are only ever *suggested* when Compute is on; what is drawn comes from the text.
 
 import { parseExpression, parseNumber } from './expr';
-import { splitClauses, splitTopLevel, findPairs, findTriples, toTex, fmt } from './args';
+import { splitClauses, splitTopLevel, findPairs, findTriples, toTex, fmt, wordsAsText } from './args';
 import { Q, parseQ, det, inverse, applyOp, opText, opTex, parseRowOp, nextRrefStep, type M, type RowOp } from './rational';
 import { svg, makeFrame, drawAxes, path, line, text, el, arrow, COLORS, clipToBox, DASHED, dot, polyline, type Frame } from './svg';
 import { fail, firstLine, type ArgTools, type FigureCommand } from './types';
@@ -352,7 +352,7 @@ export const eigen: FigureCommand = {
     if (m.rows.length !== m.rows[0].length) return fail('Eigenvalues need a square matrix');
     const name = m.name ? toTex(m.name) : 'A';
     let latex = `${name} = ${matrixTex(m.rows, envOf(m))}`;
-    if (answers.length) latex = `\\begin{aligned} &${latex} \\\\ ${answers.map((a) => `&${toTex(a.replace(/^lambda/i, 'λ').replace(/^l\s*=/i, 'λ ='))}`).join(' \\\\ ')} \\end{aligned}`;
+    if (answers.length) latex = `\\begin{aligned} &${latex} \\\\ ${answers.map((a) => `&${wordsAsText(toTex(a.replace(/^lambda/i, 'λ').replace(/^l\s*=/i, 'λ =')))}`).join(' \\\\ ')} \\end{aligned}`;
     // Draw written 2×2 eigenvectors under the transformation.
     const num = numeric(m, tools);
     const vLine = answers.find((a) => /^v\s*=/i.test(a));
@@ -455,7 +455,7 @@ export const system: FigureCommand = {
     if (!eqs.length) return fail(`Which equations? e.g. ${firstLine(system.example)}`);
     const rows = eqs.map((e) => { const [l, r] = e.split('='); return `${toTex(l.trim())} &= ${toTex(r.trim())}`; });
     let latex = `\\left\\{\\begin{aligned} ${rows.join(' \\\\ ')} \\end{aligned}\\right.`;
-    for (const a of answers) latex += ` \\quad \\Longrightarrow \\quad ${toTex(a.replace(ANSWER, '').trim()) || '\\text{no solution}'}`;
+    for (const a of answers) latex += ` \\quad \\Longrightarrow \\quad ${/no solution/i.test(a) ? '\\text{no solution}' : wordsAsText(toTex(a.replace(ANSWER, '').trim()))}`;
     return { ok: true, latex, notes: [] };
   },
   suggest(args, tools) {

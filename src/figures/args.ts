@@ -203,3 +203,8 @@ export function fmt(v: number, digits = 4): string {
   if (Number.isInteger(v)) return String(v);
   return String(parseFloat(v.toPrecision(digits)));
 }
+
+/** In a LaTeX answer line, set plain words ("order", "odd", "twice") as text, keeping maths as maths. */
+export function wordsAsText(tex: string): string {
+  return tex.replace(/(?<![\\a-zA-Z{])([a-zA-Z]{2,})(?![a-zA-Z])/g, '\\text{ $1 }');
+}
