@@ -32,7 +32,7 @@ const ALL_SYNONYMS: Record<string, string> = {
   axes3d: 'axes3', '3d': 'axes3', space: 'axes3', vec3d: 'vec3', vector3: 'vec3',
   surf: 'surface', plot3: 'surface', plot3d: 'surface', level: 'contour', levels: 'contour', levelcurves: 'contour',
   vectorfield: 'field', vf: 'field', grad: 'gradient', line3d: 'line3', helix: 'curve3', spacecurve: 'curve3',
-  cube: 'solid', cuboid: 'solid', prism: 'solid', pyramid: 'solid', tetrahedron: 'solid',
+  cube: 'solid', cuboid: 'solid', box: 'solid', prism: 'solid', pyramid: 'solid', tetrahedron: 'solid',
   cylinder: 'solid', cone: 'solid', sphere: 'solid', paraboloid: 'solid',
   green: 'loop', stokes: 'loop', closedcurve: 'loop',
   // linear algebra
@@ -53,7 +53,7 @@ const ALL_SYNONYMS: Record<string, string> = {
   // probability
   normal: 'dist', bell: 'dist', density: 'dist', pdf: 'dist', distribution: 'dist', tdist: 'dist', chisq: 'dist',
   exponential: 'dist', uniform: 'dist', binomial: 'dist', poisson: 'dist', geometric: 'dist', pmf: 'dist',
-  ptree: 'probtree', histogram: 'hist', box: 'boxplot', regression: 'scatter',
+  ptree: 'probtree', histogram: 'hist', boxwhisker: 'boxplot', regression: 'scatter',
   // complex
   argand: 'complex', unity: 'roots', cpath: 'contourpath', contourintegral: 'contourpath',
   // geometry
