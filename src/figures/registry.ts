@@ -10,6 +10,7 @@ import { LINALG_COMMANDS } from './linalg';
 import { DIFFEQ_COMMANDS } from './diffeq';
 import { DISCRETE_COMMANDS, probtree } from './discrete';
 import { ALGEBRA_COMMANDS } from './algebra';
+import { PROBABILITY_COMMANDS } from './probability';
 import { axes, vec } from './plane';
 import { triangle } from './triangle';
 import { interval } from './interval';
@@ -24,5 +25,5 @@ export const ALL_COMMANDS: FigureCommand[] = [
   triangle,
   ...DISCRETE_COMMANDS, diagram,
   ...ALGEBRA_COMMANDS,
-  probtree,
+  ...PROBABILITY_COMMANDS, probtree,
 ];

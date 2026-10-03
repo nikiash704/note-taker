@@ -34,3 +34,11 @@ describe('suggested answers', () => {
     expect(runFigure('/truthtable p -> ').output.ok).toBe(false);
   });
 });
+
+describe('probability answers', () => {
+  it('normal within one sigma', () => expect(suggestFor('/dist normal 0 1\n  + shade -1..1')).toEqual(['P = 0.6827']));
+  it('normal tail', () => expect(suggestFor('/dist normal 0 1; shade > 1.96')).toEqual(['P = 0.0250']));
+  it('binomial range, discrete', () => expect(suggestFor('/dist binomial n=10 p=0.5; shade 3..5')).toEqual(['P = 0.5684']));
+  it('strict inequality skips the endpoint', () => expect(suggestFor('/dist binomial n=10 p=0.5; shade < 3')).toEqual(['P = 0.0547']));
+  it('synonym fills in the family', () => expect(suggestFor('/normal 100 15; shade > 130')).toEqual(['P = 0.0228']));
+});
