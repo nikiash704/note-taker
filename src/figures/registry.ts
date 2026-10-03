@@ -7,6 +7,7 @@ import { REGION_COMMANDS } from './regions';
 import { signchart } from './signchart';
 import { MULTIVAR_COMMANDS } from './multivar';
 import { LINALG_COMMANDS } from './linalg';
+import { DIFFEQ_COMMANDS } from './diffeq';
 import { axes, vec } from './plane';
 import { triangle } from './triangle';
 import { interval } from './interval';
@@ -17,6 +18,7 @@ export const ALL_COMMANDS: FigureCommand[] = [
   ...REGION_COMMANDS,
   ...MULTIVAR_COMMANDS,
   vec, ...LINALG_COMMANDS,
+  ...DIFFEQ_COMMANDS,
   triangle,
   diagram,
 ];

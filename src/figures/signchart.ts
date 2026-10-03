@@ -42,7 +42,7 @@ function factorsOf(src: string): string[] {
 }
 
 /** Zeros of g in [a, b]: sign changes plus touching zeros (like (x-1)^2). */
-function zerosOf(g: Fn1, a: number, b: number): number[] {
+export function zerosOf(g: Fn1, a: number, b: number): number[] {
   const N = 2000;
   const xs = Array.from({ length: N + 1 }, (_, i) => a + ((b - a) * i) / N);
   const ys = xs.map(g);
