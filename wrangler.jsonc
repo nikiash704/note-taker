@@ -1,0 +1,11 @@
+// Cloudflare deploy settings. The app is a static site: `npm run build`
+// writes it to dist/, and `wrangler deploy` uploads that folder.
+{
+  "name": "note-taker",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown paths such as /stats get index.html; the app picks the page.
+    "not_found_handling": "single-page-application"
+  }
+}

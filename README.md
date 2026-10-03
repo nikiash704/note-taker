@@ -75,6 +75,8 @@ Then open http://localhost:5173. Other scripts:
 
 3. Every push to `main` redeploys. `public/_redirects` makes `/stats` work on Pages.
 
+If Cloudflare created a **Worker** instead of a Pages project (its build log ends with `npx wrangler deploy`), that works too: `wrangler.jsonc` tells it to upload `dist/` as a static site, with unknown paths like `/stats` served by `index.html`. Keep the build command `npm run build` and the deploy command `npx wrangler deploy`.
+
 ## How the code is laid out
 
 ```
