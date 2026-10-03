@@ -10,7 +10,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { isolateHistory } from '@codemirror/commands';
 import { findExpansion, parseTemplate } from './snippets';
 import { mathAt, type MathRegion } from './mathRegions';
-import { isFigureLine } from './markdown';
+import { figureBlockAt } from './figureBlocks';
 
 // ---- Remembered stops -------------------------------------------------------
 
@@ -57,7 +57,7 @@ function insertSnippet(view: EditorView, from: number, to: number, template: str
 const expandOnInput = EditorView.inputHandler.of((view, from, to, text, insert) => {
   if (text.length !== 1 || from !== to || view.state.selection.ranges.length > 1) return false;
   const line = view.state.doc.lineAt(from);
-  if (isFigureLine(line.text)) return false;
+  if (figureBlockAt(view.state.doc, line.number)) return false;
 
   const mode = mathAt(view.state.doc.toString(), from) ? 'math' : 'text';
   const before = line.text.slice(0, from - line.from) + text;

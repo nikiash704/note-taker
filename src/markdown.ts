@@ -26,6 +26,11 @@ export function isFigureLine(line: string): boolean {
   return /^\/[A-Za-z]/.test(line);
 }
 
+/** A "+ …" line that continues the figure command above it. */
+export function isContinuationLine(line: string): boolean {
+  return /^\s*\+(\s|$)/.test(line);
+}
+
 /** Cut a document into blocks. Line numbers are kept so the preview can follow the cursor. */
 export function splitBlocks(doc: string): Block[] {
   const lines = doc.split('\n');
@@ -53,8 +58,11 @@ export function splitBlocks(doc: string): Block[] {
       push('math', i, end);
       i = end + 1;
     } else if (isFigureLine(line)) {
-      push('figure', i, i);
-      i++;
+      // A figure owns the "+ …" lines right below it.
+      let end = i;
+      while (end + 1 < lines.length && isContinuationLine(lines[end + 1])) end++;
+      push('figure', i, end);
+      i = end + 1;
     } else if (HEADING.test(line)) {
       push('heading', i, i);
       i++;

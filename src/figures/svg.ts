@@ -55,6 +55,13 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, a: Attrs &
   );
 }
 
+/** Just the arrowhead at (x2, y2), pointing along the direction from (x1, y1). */
+export function arrowHead(x1: number, y1: number, x2: number, y2: number, color: string = INK, size = 9): string {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const p = (side: number) => `${round(x2 - size * Math.cos(angle + side * 0.42))},${round(y2 - size * Math.sin(angle + side * 0.42))}`;
+  return el('path', { d: `M${round(x2)},${round(y2)} L${p(1)} L${p(-1)} Z`, fill: color, stroke: 'none' });
+}
+
 /** Wrap drawing code in a standalone <svg>. */
 export function svg(width: number, height: number, body: string, label: string): string {
   return (
@@ -177,4 +184,169 @@ export function drawAxes(f: Frame, opts: { grid?: boolean; piX?: boolean; xLabel
 function piStep(span: number): number {
   const halfPis = span / (Math.PI / 2);
   return halfPis <= 8 ? Math.PI / 2 : halfPis <= 16 ? Math.PI : 2 * Math.PI;
+}
+
+// ---- Drawing helpers shared by many figures -----------------------------------------
+
+export const DASHED = { 'stroke-dasharray': '5 4' } as const;
+export const FAINT = { 'stroke-opacity': 0.45 } as const;
+
+let clipCount = 0;
+
+/** Keep drawing inside the plotting box. Returns the <defs> to add and the attribute to use. */
+export function clipToBox(f: Frame): { defs: string; attr: string } {
+  const id = `clip-${++clipCount}`;
+  const { box } = f;
+  return {
+    defs: `<defs><clipPath id="${id}"><rect x="${round(box.left)}" y="${round(box.top)}" width="${round(box.right - box.left)}" height="${round(box.bottom - box.top)}"/></clipPath></defs>`,
+    attr: `url(#${id})`,
+  };
+}
+
+/** Path through y = fn(x), lifting the pen at gaps and asymptote jumps. */
+export function functionPath(f: Frame, fn: (x: number) => number, x0 = f.x[0], x1 = f.x[1], samples = 480): string {
+  const ySpan = f.y[1] - f.y[0];
+  let d = '';
+  let pen = false;
+  let prev = NaN;
+  for (let i = 0; i <= samples; i++) {
+    const x = x0 + ((x1 - x0) * i) / samples;
+    const y = fn(x);
+    const jump = Number.isFinite(prev) && Math.abs(y - prev) > ySpan * 2;
+    prev = y;
+    if (!Number.isFinite(y) || jump) {
+      pen = false;
+      if (!Number.isFinite(y)) continue;
+    }
+    d += `${pen ? 'L' : 'M'}${round(f.sx(x))},${round(clampPx(f.sy(y)))}`;
+    pen = true;
+  }
+  return d;
+}
+
+const clampPx = (v: number) => Math.max(-5000, Math.min(5000, v));
+
+/** Path through points given in maths coordinates. */
+export function polyline(f: Frame, pts: [number, number][], closed = false): string {
+  let d = '';
+  let pen = false;
+  for (const [x, y] of pts) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) { pen = false; continue; }
+    d += `${pen ? 'L' : 'M'}${round(clampPx(f.sx(x)))},${round(clampPx(f.sy(y)))}`;
+    pen = true;
+  }
+  return closed && d ? d + 'Z' : d;
+}
+
+/** Pick a range that shows the interesting part of some values, ignoring spikes. */
+export function autoRange(values: number[], includeZero = true): [number, number] | null {
+  const ys = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (ys.length === 0) return null;
+  let lo = ys[Math.floor(ys.length * 0.05)];
+  let hi = ys[Math.ceil(ys.length * 0.95) - 1];
+  const min = ys[0], max = ys[ys.length - 1];
+  if (max - min <= 3 * (hi - lo) || hi === lo) { lo = min; hi = max; }
+  if (hi - lo < 1e-9) { lo -= 1; hi += 1; }
+  const span = hi - lo;
+  if (includeZero) {
+    if (lo > 0 && lo < span * 0.5) lo = 0;
+    if (hi < 0 && -hi < span * 0.5) hi = 0;
+  }
+  const pad = (hi - lo) * 0.08;
+  return [lo - pad, hi + pad];
+}
+
+export type Segment = [number, number, number, number];
+
+/** Where f(x, y) = level, as little line segments (marching squares). */
+export function contourSegments(
+  fn: (x: number, y: number) => number, xr: [number, number], yr: [number, number], level = 0, nx = 90, ny = 90,
+): Segment[] {
+  const dx = (xr[1] - xr[0]) / nx, dy = (yr[1] - yr[0]) / ny;
+  const v: number[][] = [];
+  for (let i = 0; i <= nx; i++) {
+    v.push([]);
+    for (let j = 0; j <= ny; j++) v[i].push(fn(xr[0] + i * dx, yr[0] + j * dy) - level);
+  }
+  const segs: Segment[] = [];
+  const lerp = (a: number, b: number) => (Math.abs(a - b) < 1e-12 ? 0.5 : a / (a - b));
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < ny; j++) {
+      const a = v[i][j], b = v[i + 1][j], c = v[i + 1][j + 1], d = v[i][j + 1];
+      if (![a, b, c, d].every(Number.isFinite)) continue;
+      const x = xr[0] + i * dx, y = yr[0] + j * dy;
+      // Crossing points on each edge of the cell.
+      const pts: [number, number][] = [];
+      if ((a > 0) !== (b > 0)) pts.push([x + lerp(a, b) * dx, y]);
+      if ((b > 0) !== (c > 0)) pts.push([x + dx, y + lerp(b, c) * dy]);
+      if ((c > 0) !== (d > 0)) pts.push([x + (1 - lerp(c, d)) * dx, y + dy]);
+      if ((d > 0) !== (a > 0)) pts.push([x, y + (1 - lerp(d, a)) * dy]);
+      // Skip cells straddling a pole (huge values of opposite sign).
+      const big = Math.max(Math.abs(a), Math.abs(b), Math.abs(c), Math.abs(d));
+      if (big > 1e6) continue;
+      if (pts.length === 2) segs.push([...pts[0], ...pts[1]]);
+      if (pts.length === 4) segs.push([...pts[0], ...pts[1]], [...pts[2], ...pts[3]]);
+    }
+  }
+  return segs;
+}
+
+export function segmentsPath(f: Frame, segs: Segment[]): string {
+  return segs.map(([x1, y1, x2, y2]) => `M${round(f.sx(x1))},${round(f.sy(y1))}L${round(f.sx(x2))},${round(f.sy(y2))}`).join('');
+}
+
+/** Shade wherever pred(x, y) holds, as thin horizontal strips (simple and robust). */
+export function fillWhere(f: Frame, pred: (x: number, y: number) => boolean, step = 1.5): string {
+  const { box } = f;
+  const toX = (px: number) => f.x[0] + ((px - box.left) / (box.right - box.left)) * (f.x[1] - f.x[0]);
+  const toY = (py: number) => f.y[0] + ((box.bottom - py) / (box.bottom - box.top)) * (f.y[1] - f.y[0]);
+  let d = '';
+  for (let py = box.top; py < box.bottom; py += step) {
+    const y = toY(py + step / 2);
+    let runStart: number | null = null;
+    for (let px = box.left; px <= box.right + step; px += step) {
+      const inside = px <= box.right && pred(toX(px + step / 2), y);
+      if (inside && runStart === null) runStart = px;
+      if (!inside && runStart !== null) {
+        d += `M${round(runStart)},${round(py)}h${round(px - runStart)}v${round(step + 0.4)}h${round(runStart - px)}Z`;
+        runStart = null;
+      }
+    }
+  }
+  return d;
+}
+
+/** A small colour key in the top-left corner of the plotting box. */
+export function legend(f: Frame, items: { label: string; color: string; dashed?: boolean }[]): string {
+  let out = '';
+  items.forEach(({ label, color, dashed }, k) => {
+    const y = f.box.top + 14 + k * 18;
+    out += line(f.box.left + 4, y - 4, f.box.left + 18, y - 4, { stroke: color, 'stroke-width': 3, ...(dashed ? { 'stroke-dasharray': '4 3' } : {}) });
+    out += text(f.box.left + 24, y, label, { 'font-style': 'italic', 'font-size': 13 });
+  });
+  return out;
+}
+
+/** A labelled point in maths coordinates. */
+export function dot(f: Frame, x: number, y: number, opts: { label?: string; color?: string; open?: boolean; r?: number } = {}): string {
+  const color = opts.color ?? INK;
+  let out = circle(f.sx(x), f.sy(y), opts.r ?? 4, opts.open
+    ? { stroke: color, 'stroke-width': 2, style: 'fill: var(--paper, #fff)' }
+    : { fill: color });
+  if (opts.label) out += text(f.sx(x) + 7, f.sy(y) - 7, opts.label, { 'font-size': 13, 'font-style': 'italic', fill: color });
+  return out;
+}
+
+/** Arrowheads along a path of points, to show direction. */
+export function directionArrows(f: Frame, pts: [number, number][], count = 3, color: string = INK): string {
+  let out = '';
+  const good = pts.filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  for (let k = 1; k <= count; k++) {
+    const i = Math.floor((good.length * k) / (count + 1));
+    if (i < 1 || i >= good.length) continue;
+    const [x0, y0] = good[i - 1], [x1, y1] = good[i];
+    if (Math.hypot(f.sx(x1) - f.sx(x0), f.sy(y1) - f.sy(y0)) < 0.01) continue;
+    out += arrowHead(f.sx(x0), f.sy(y0), f.sx(x1), f.sy(y1), color, 9);
+  }
+  return out;
 }

@@ -23,6 +23,7 @@ const FILLER = ['at', 'angle', 'angled', 'triangle', 'with', 'vertex', 'in', 'is
 
 export const triangle: FigureCommand = {
   name: 'triangle',
+  area: 'Geometry',
   example: '/triangle ABC right at C',
   description: 'Right, isosceles, equilateral or obtuse; label sides (a=3, AB=5) and angles (A=30°).',
   draw(args, tools) {

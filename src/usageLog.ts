@@ -8,37 +8,37 @@
 
 import type { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { isFigureLine } from './markdown';
+import { figureBlockAt } from './figureBlocks';
+import { computeField } from './suggestions';
 import { runFigureCached } from './figures';
 import { appendLog } from './logStore';
 
 interface Active {
-  pos: number;        // start of the line being edited (kept up to date as text changes)
+  pos: number;        // start of the figure being edited (kept up to date as text changes)
   startedAt: number;
   lastEditAt: number;
   edits: number;
+  suggestionsAccepted: number;
 }
 
 export function usageTracker(): Extension {
   let active: Active | null = null;
-  // Lines (by start position) whose last commit failed, to spot user fixes.
+  // Figures (by start position) whose last commit failed, to spot user fixes.
   let failedAt = new Set<number>();
 
   function commit(view: EditorView) {
     if (!active) return;
-    const { pos, startedAt, lastEditAt, edits } = active;
+    const { pos, startedAt, lastEditAt, edits, suggestionsAccepted } = active;
     active = null;
     if (pos > view.state.doc.length) return;
-    const line = view.state.doc.lineAt(pos);
-    if (!isFigureLine(line.text)) return;
+    const block = figureBlockAt(view.state.doc, view.state.doc.lineAt(pos).number);
+    if (!block) return;
 
-    const run = runFigureCached(line.text);
-    const corrections = run.output.ok
-      ? run.output.notes.filter((n) => n.includes('→'))
-      : [];
+    const run = runFigureCached(block.text);
+    const corrections = run.output.ok ? run.output.notes.filter((n) => n.includes('→')) : [];
     appendLog({
       at: Date.now(),
-      line: line.text.trim(),
+      line: block.text.replace(/\n\s*/g, ' ').trim(),
       typed: run.typed,
       command: run.command,
       match: run.match,
@@ -48,37 +48,43 @@ export function usageTracker(): Extension {
       typingMs: Math.round(lastEditAt - startedAt),
       parseMs: Math.round(run.ms * 100) / 100,
       edits,
-      fixedByUser: run.output.ok && failedAt.has(line.from),
+      fixedByUser: run.output.ok && failedAt.has(block.from),
+      lines: block.toLine - block.fromLine + 1,
+      suggestionsAccepted,
+      compute: view.state.field(computeField),
     });
-    if (run.output.ok) failedAt.delete(line.from);
-    else failedAt.add(line.from);
+    if (run.output.ok) failedAt.delete(block.from);
+    else failedAt.add(block.from);
   }
 
   return EditorView.updateListener.of((u) => {
     if (u.docChanged) {
-      if (active) active.pos = u.changes.mapPos(active.pos);
-      failedAt = new Set([...failedAt].map((p) => u.changes.mapPos(p)));
+      if (active) active.pos = u.changes.mapPos(active.pos, -1);
+      failedAt = new Set([...failedAt].map((p) => u.changes.mapPos(p, -1)));
     }
-    const head = u.state.selection.main.head;
-    const line = u.state.doc.lineAt(head);
+    const { doc } = u.state;
+    const line = doc.lineAt(u.state.selection.main.head);
+    const block = figureBlockAt(doc, line.number);
 
-    // Left the line (or the editor)? Then the command is done.
+    // Left the figure (or the editor)? Then the command is done.
     if (active) {
-      const activeLine = u.state.doc.lineAt(Math.min(active.pos, u.state.doc.length));
-      const leftLine = activeLine.from !== line.from;
+      const leftFigure = !block || block.from !== doc.lineAt(Math.min(active.pos, doc.length)).from;
       const leftEditor = u.focusChanged && !u.view.hasFocus;
-      if (leftLine || leftEditor) commit(u.view);
+      if (leftFigure || leftEditor) commit(u.view);
     }
 
     // Start timing from the very first "/" typed on the line.
     const typed = u.transactions.some((tr) => tr.docChanged && (tr.isUserEvent('input') || tr.isUserEvent('delete')));
-    if (typed && line.text.startsWith('/')) {
+    const accepted = u.transactions.some((tr) => tr.isUserEvent('input.suggestion'));
+    const start = block?.from ?? (line.text.startsWith('/') ? line.from : null);
+    if (typed && start !== null) {
       const now = performance.now();
-      if (active && active.pos === line.from) {
+      if (active && active.pos === start) {
         active.lastEditAt = now;
         active.edits++;
+        if (accepted) active.suggestionsAccepted++;
       } else {
-        active = { pos: line.from, startedAt: now, lastEditAt: now, edits: 1 };
+        active = { pos: start, startedAt: now, lastEditAt: now, edits: 1, suggestionsAccepted: accepted ? 1 : 0 };
       }
     }
   });

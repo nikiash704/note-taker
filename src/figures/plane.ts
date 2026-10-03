@@ -10,59 +10,8 @@
 import { parseNumber } from './expr';
 import { readRange } from './range';
 import { svg, makeFrame, drawAxes, arrow, circle, line, text, COLORS, INK, formatNumber } from './svg';
-import { fail, type ArgTools, type FigureCommand, type FigureOutput } from './types';
-
-interface Pair {
-  name: string | null;
-  x: number;
-  y: number;
-  /** Where the pair was found in the argument text. */
-  start: number;
-  end: number;
-}
-
-const OPEN = '([<⟨';
-const CLOSE: Record<string, string> = { '(': ')', '[': ']', '<': '>', '⟨': '⟩' };
-
-/** Find every (x, y) pair in the text, with an optional name in front: u=(1,2), A(1,2). */
-function findPairs(src: string, tools: ArgTools, openers: string): Pair[] | string {
-  const pairs: Pair[] = [];
-  for (let i = 0; i < src.length; i++) {
-    if (!openers.includes(src[i])) continue;
-    const close = CLOSE[src[i]];
-    // Scan to the matching close, allowing nested (…) like sqrt(2).
-    let depth = 0, j = i + 1;
-    for (; j < src.length; j++) {
-      if (src[j] === close && depth === 0) break;
-      if (src[j] === '(') depth++;
-      else if (src[j] === ')') depth--;
-    }
-    const inner = src.slice(i + 1, j);
-    const parts = splitTopLevel(inner);
-    if (parts.length === 3) return 'Only 2D vectors for now: use two numbers like (2, 3)';
-    if (parts.length !== 2) continue;
-    const x = parseNumber(parts[0], tools.fixName);
-    const y = parseNumber(parts[1], tools.fixName);
-    if (x === null || y === null) return `Couldn't read the numbers in “${src.slice(i, j + 1)}”`;
-    const before = src.slice(0, i).match(/([A-Za-z][A-Za-z0-9']*)\s*[=:]?\s*$/);
-    const name = before && !/^(to|from|and)$/i.test(before[1]) ? before[1] : null;
-    pairs.push({ name, x, y, start: before && name ? i - before[0].length : i, end: j + 1 });
-    i = j;
-  }
-  return pairs;
-}
-
-function splitTopLevel(s: string): string[] {
-  const parts: string[] = [];
-  let depth = 0, cur = '';
-  for (const c of s) {
-    if (c === '(') depth++;
-    if (c === ')') depth--;
-    if ((c === ',' || c === ';') && depth === 0) { parts.push(cur.trim()); cur = ''; } else cur += c;
-  }
-  parts.push(cur.trim());
-  return parts.filter((p) => p !== '');
-}
+import { fail, type FigureCommand, type FigureOutput } from './types';
+import { findPairs } from './args';
 
 // ---- Drawing ----------------------------------------------------------------------
 
@@ -120,10 +69,11 @@ const pairLabel = (x: number, y: number) => `(${formatNumber(x)}, ${formatNumber
 
 export const vec: FigureCommand = {
   name: 'vec',
+  area: 'Linear algebra',
   example: '/vec (2,3)',
   description: 'Arrows on a grid: /vec u=(2,3) v=(-1,2), or /vec (1,1) -> (3,2).',
   draw(args, tools) {
-    let found = findPairs(args, tools, OPEN);
+    let found = findPairs(args, tools);
     if (typeof found === 'string') return fail(found);
     // No brackets at all: "/vec 2,3" or "/vec 2 3".
     if (found.length === 0) {
@@ -156,6 +106,7 @@ export const vec: FigureCommand = {
 
 export const axes: FigureCommand = {
   name: 'axes',
+  area: 'Graphs of functions',
   example: '/axes -3..3',
   description: 'A blank coordinate grid. Optional ranges (x -2..4 y -1..3) and points A(1,2).',
   draw(args, tools) {

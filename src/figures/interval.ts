@@ -7,7 +7,7 @@ import { parseNumber } from './expr';
 import { svg, line, circle, text, arrow, niceStep, ticks, COLORS, INK } from './svg';
 import { fail, type ArgTools, type FigureCommand } from './types';
 
-interface Interval {
+export interface Interval {
   lo: number;
   hi: number;
   loClosed: boolean;
@@ -20,10 +20,11 @@ const INF = /^[+-]?\s*(inf|infty|infinity|oo|∞)$/i;
 
 export const interval: FigureCommand = {
   name: 'interval',
+  area: 'Graphs of functions',
   example: '/interval [0,1)',
   description: 'Intervals on a number line. Unions with U, and inequalities like 0 <= x < 1.',
   draw(args, tools) {
-    const pieces = args.split(/\s*(?:∪|\bu\b|\bor\b|\bunion\b)\s*/i).filter((p) => p.trim());
+    const pieces = args.split(/\s*(?:∪|\bu\b|\bor\b|\bunion\b|\n)\s*/i).filter((p) => p.trim());
     if (pieces.length === 0) return fail(`Which interval? e.g. ${interval.example}`);
     const parts: Interval[] = [];
     for (const piece of pieces) {
@@ -69,7 +70,7 @@ function endpoint(s: string, tools: ArgTools): number | null {
 }
 
 /** "0 <= x < 1", "x > 3", "-2 < x", "x ≥ 1" */
-function readInequality(src: string, tools: ArgTools): Interval | null {
+export function readInequality(src: string, tools: ArgTools): Interval | null {
   const s = src.replace(/≤|=</g, '<=').replace(/≥|=>/g, '>=');
   const parts = s.split(/\s*(<=|>=|<|>)\s*/);
   // parts alternate: value, op, value, op, value

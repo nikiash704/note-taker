@@ -4,6 +4,7 @@ import { createEditor } from './editor';
 import { equationShortcuts } from './shortcuts';
 import { figureHints } from './figureHints';
 import { usageTracker } from './usageLog';
+import { suggestions, computeField, setCompute } from './suggestions';
 import { Preview } from './preview';
 import { loadNote, saveNote, downloadFile } from './storage';
 import { figureElement } from './figures/element';
@@ -16,6 +17,7 @@ export function startNotes(app: HTMLElement): void {
       <div class="brand"><span class="logo" aria-hidden="true"></span>Note taker</div>
       <span class="status" id="status"></span>
       <div class="actions">
+        <button class="btn" id="compute" title="When on, the app works out answers (determinants, row reduction, truth tables…) and suggests them under the command. Tab accepts. Nothing is written unless you accept." aria-pressed="false">Compute: off</button>
         <button class="btn" id="help" title="Show the shortcuts and figure commands (Ctrl+/)" aria-expanded="false">Cheat sheet</button>
         <label class="btn" title="Open a Markdown file">Open<input type="file" id="open" accept=".md,.markdown,.txt" hidden></label>
         <button class="btn primary" id="download" title="Download this note as Markdown (Ctrl/Cmd+S)">Download .md</button>
@@ -63,7 +65,7 @@ export function startNotes(app: HTMLElement): void {
     parent: app.querySelector('#editor')!,
     doc: loadNote() ?? WELCOME_NOTE,
     onChange: scheduleRender,
-    extensions: [equationShortcuts(), figureHints, usageTracker()],
+    extensions: [suggestions(), equationShortcuts(), figureHints, usageTracker()],
     onCursorLine: (line) => {
       cursorLine = line;
       preview.follow(line);
@@ -85,6 +87,21 @@ export function startNotes(app: HTMLElement): void {
   function downloadNote() {
     downloadFile(noteFilename(), editor.state.doc.toString(), 'text/markdown');
   }
+
+  // Compute switch: answers are only ever suggested, never written by themselves.
+  const compute = app.querySelector<HTMLButtonElement>('#compute')!;
+  const showCompute = () => {
+    const on = editor.state.field(computeField);
+    compute.textContent = `Compute: ${on ? 'on' : 'off'}`;
+    compute.classList.toggle('on', on);
+    compute.setAttribute('aria-pressed', String(on));
+  };
+  showCompute();
+  compute.addEventListener('click', () => {
+    editor.dispatch({ effects: setCompute.of(!editor.state.field(computeField)) });
+    showCompute();
+    editor.focus();
+  });
 
   // The cheat sheet slides over the preview; it never takes focus from the editor.
   const help = app.querySelector<HTMLButtonElement>('#help')!;

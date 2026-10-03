@@ -12,10 +12,11 @@ import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { tags } from '@lezer/highlight';
 import { findMathRegions } from './mathRegions';
-import { isFigureLine } from './markdown';
+import { figureBlocksIn } from './figureBlocks';
 
 const mathMark = Decoration.mark({ class: 'cm-math' });
 const figureLine = Decoration.line({ class: 'cm-figure-line' });
+const figureMore = Decoration.line({ class: 'cm-figure-line cm-figure-more' });
 
 /** Tint $math$ and /figure lines inside the visible part of the editor. */
 const tint = ViewPlugin.fromClass(
@@ -37,13 +38,14 @@ const tint = ViewPlugin.fromClass(
         if (r.from > vTo) break;
         if (r.to > r.from) marks.push({ from: r.from, to: r.to, deco: mathMark });
       }
-      for (let pos = vFrom; pos <= vTo; ) {
-        const line = doc.lineAt(pos);
-        if (isFigureLine(line.text)) marks.push({ from: line.from, to: line.from, deco: figureLine });
-        pos = line.to + 1;
+      for (const block of figureBlocksIn(doc, vFrom, vTo)) {
+        for (let n = block.fromLine; n <= block.toLine; n++) {
+          const from = doc.line(n).from;
+          marks.push({ from, to: from, deco: n === block.fromLine ? figureLine : figureMore });
+        }
       }
 
-      marks.sort((a, b) => a.from - b.from || (a.deco === figureLine ? -1 : 1));
+      marks.sort((a, b) => a.from - b.from || (a.deco === mathMark ? 1 : -1));
       const builder = new RangeSetBuilder<Decoration>();
       for (const m of marks) builder.add(m.from, m.to, m.deco);
       return builder.finish();

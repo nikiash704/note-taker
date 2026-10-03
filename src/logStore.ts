@@ -23,6 +23,12 @@ export interface LogEntry {
   edits: number;
   /** True if this line was committed before and failed then. */
   fixedByUser: boolean;
+  /** Lines in the figure (1 + the number of "+ …" lines). */
+  lines?: number;
+  /** Suggested answers accepted with Tab while writing it. */
+  suggestionsAccepted?: number;
+  /** Was the Compute switch on? */
+  compute?: boolean;
 }
 
 const LOG_KEY = 'nt.log';

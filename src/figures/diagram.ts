@@ -21,6 +21,7 @@ function directionOf(token: string): Direction {
 
 export const diagram: FigureCommand = {
   name: 'diagram',
+  area: 'Logic, sets and discrete maths',
   example: '/diagram A -> B -> C',
   description: 'Boxes and arrows. Label arrows with -f->, separate chains with ;',
   draw(args) {
