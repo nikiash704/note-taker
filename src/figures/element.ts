@@ -39,18 +39,20 @@ export function figureElement(block: string): HTMLElement {
       const standalone = svg.replace('<svg ', '<svg color="#111" ');
       downloadFile(`${run.command}-${++downloads}.svg`, standalone, 'image/svg+xml');
     }));
+  } else if (html) {
+    el.classList.add('figure-html');
+    el.innerHTML = html;
   } else if (latex) {
     el.classList.add('figure-math');
     el.innerHTML = renderMath(latex, true);
+  }
+  if (!svg && latex) {
     tools.append(toolButton('Copy LaTeX', 'Copy the LaTeX source of this block', (button) => {
       navigator.clipboard?.writeText(latex).then(() => {
         button.textContent = 'Copied';
         setTimeout(() => (button.textContent = 'Copy LaTeX'), 1200);
       });
     }));
-  } else if (html) {
-    el.classList.add('figure-html');
-    el.innerHTML = html;
   }
 
   if (notes.length) {

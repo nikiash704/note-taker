@@ -6,6 +6,7 @@ import { CURVE_COMMANDS } from './curves';
 import { REGION_COMMANDS } from './regions';
 import { signchart } from './signchart';
 import { MULTIVAR_COMMANDS } from './multivar';
+import { LINALG_COMMANDS } from './linalg';
 import { axes, vec } from './plane';
 import { triangle } from './triangle';
 import { interval } from './interval';
@@ -15,7 +16,7 @@ export const ALL_COMMANDS: FigureCommand[] = [
   ...GRAPH_COMMANDS, ...CURVE_COMMANDS, signchart, axes, interval,
   ...REGION_COMMANDS,
   ...MULTIVAR_COMMANDS,
-  vec,
+  vec, ...LINALG_COMMANDS,
   triangle,
   diagram,
 ];
