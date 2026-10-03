@@ -13,6 +13,8 @@ import { ALGEBRA_COMMANDS } from './algebra';
 import { PROBABILITY_COMMANDS } from './probability';
 import { COMPLEX_COMMANDS } from './complexan';
 import { GEOMETRY_COMMANDS } from './geometry';
+import { MISC_COMMANDS } from './misc';
+import { BLOCK_COMMANDS } from './blocks';
 import { axes, vec } from './plane';
 import { triangle } from './triangle';
 import { interval } from './interval';
@@ -29,4 +31,6 @@ export const ALL_COMMANDS: FigureCommand[] = [
   ...ALGEBRA_COMMANDS,
   ...PROBABILITY_COMMANDS, probtree,
   ...COMPLEX_COMMANDS,
+  ...MISC_COMMANDS,
+  ...BLOCK_COMMANDS,
 ];

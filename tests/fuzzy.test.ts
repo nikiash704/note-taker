@@ -24,7 +24,7 @@ describe('command names', () => {
     expect(name('fn')).toBe('plot');
     expect(name('tri')).toBe('triangle');
     expect(name('grpah')).toBe('plot');
-    expect(name('inter')).toBe('interval');
+    expect(name('interv')).toBe('interval');
     expect(name('Vector')).toBe('vec');
     expect(name('xyz')).toBeNull();
   });

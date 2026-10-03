@@ -11,9 +11,11 @@ describe('every command', () => {
   }
 
   it('one line with ";" is the same as "+" lines', () => {
+    // Theorem boxes hold prose, where ";" is just punctuation.
+    const prose = ['def', 'thm', 'lemma', 'prop', 'cor', 'proof', 'ex', 'note', 'rem'];
     for (const cmd of COMMANDS) {
       const [first, ...more] = cmd.example.split('\n');
-      if (!more.length) continue;
+      if (!more.length || prose.includes(cmd.name)) continue;
       const oneLine = [first, ...more.map((l) => l.replace(/^\s*\+\s*/, ''))].join('; ');
       const a = runFigure(cmd.example).output;
       const b = runFigure(oneLine).output;
