@@ -5,9 +5,11 @@
 // /triangle ABC right at C a=3 b=4      side a is opposite A, so this is 3-4-5
 // /triangle ABC AB=5 BC=7 CA=6          three sides: drawn to scale
 // /triangle ABC A=30°                   label an angle
+// /triangle ABC + altitude from A + circumcircle + centroid + incircle + median from B + bisector from C
 
 import { parseNumber } from './expr';
-import { svg, path, text, INK, round } from './svg';
+import { COLORS } from './svg';
+import { GeoPicture, foot, mid, unit, sub, add, dist, intersect, circumcircle, incircle, centroid, orthocenter } from './geo2d';
 import { fail, type FigureCommand } from './types';
 
 type Pt = [number, number];
@@ -24,12 +26,19 @@ const FILLER = ['at', 'angle', 'angled', 'triangle', 'with', 'vertex', 'in', 'is
 export const triangle: FigureCommand = {
   name: 'triangle',
   area: 'Geometry',
-  example: '/triangle ABC right at C',
-  description: 'Right, isosceles, equilateral or obtuse; label sides (a=3, AB=5) and angles (A=30°).',
+  example: '/triangle ABC\n  + altitude from A\n  + circumcircle\n  + centroid',
+  description: 'Right, isosceles, equilateral or obtuse; sides (a=3, AB=5), angles (A=30°); altitude/median/bisector from X, centroid, orthocenter, circumcircle, incircle.',
   draw(args, tools) {
     const notes: string[] = [];
+    // Constructions inside the triangle: "altitude from A", "medians", "circumcircle"…
+    const features: Feature[] = [];
+    const rest = args.replace(FEATURE, (_m, line: string | undefined, from: string | undefined, centre: string | undefined) => {
+      if (line) features.push({ kind: lineKind(line), from: from ?? null });
+      else if (centre) features.push({ kind: centreKind(centre), from: null });
+      return ' ';
+    });
     // Split "C=90", "a = 3", "AB=5" into single tokens, everything else on spaces/commas.
-    const tokens = args.replace(/\s*=\s*/g, '=').split(/[\s,;]+/).filter(Boolean);
+    const tokens = rest.replace(/\s*=\s*/g, '=').split(/[\s,;]+/).filter(Boolean);
 
     let names = 'ABC';
     let kind: Kind | null = null;
@@ -83,7 +92,7 @@ export const triangle: FigureCommand = {
     if (typeof pts === 'string') return fail(pts);
     return {
       ok: true,
-      svg: drawTriangle(names, pts, kind === 'right' ? special ?? names[2] : null, sides, angles),
+      svg: drawTriangle(names, pts, kind === 'right' ? special ?? names[2] : null, sides, angles, features),
       notes,
     };
   },
@@ -156,68 +165,89 @@ function shape(
 
 // ---- Drawing -------------------------------------------------------------------------------
 
+type FeatureKind = 'altitude' | 'median' | 'bisector' | 'centroid' | 'orthocenter' | 'circumcircle' | 'incircle';
+interface Feature { kind: FeatureKind; from: string | null }
+
+const FEATURE = /\b(altitudes?|heights?|medians?|(?:angle\s+)?bisectors?)\b(?:\s+(?:from|at|of|through)\s+([A-Za-z])\b)?|\b(centroid|orthocent(?:er|re)|circumcircle|circumcent(?:er|re)|circumscribed|incircle|incent(?:er|re)|inscribed)\b/gi;
+
+const lineKind = (w: string): FeatureKind => (/alt|height/i.test(w) ? 'altitude' : /median/i.test(w) ? 'median' : 'bisector');
+const centreKind = (w: string): FeatureKind =>
+  /^centroid/i.test(w) ? 'centroid' : /^ortho/i.test(w) ? 'orthocenter' : /^(circum)/i.test(w) ? 'circumcircle' : 'incircle';
+
 function drawTriangle(
   names: string, pts: Record<string, Pt>, rightAt: string | null,
-  sides: Record<string, string>, angles: Record<string, string>,
+  sides: Record<string, string>, angles: Record<string, string>, features: Feature[] = [],
 ): string {
-  const all = Object.values(pts);
-  const minX = Math.min(...all.map((p) => p[0])), maxX = Math.max(...all.map((p) => p[0]));
-  const minY = Math.min(...all.map((p) => p[1])), maxY = Math.max(...all.map((p) => p[1]));
-  const pad = 40;
-  const scale = Math.min(300 / (maxX - minX || 1), 210 / (maxY - minY || 1));
-  const width = (maxX - minX) * scale + 2 * pad;
-  const height = (maxY - minY) * scale + 2 * pad;
-  const P: Record<string, Pt> = {};
-  for (const n of names) P[n] = [pad + (pts[n][0] - minX) * scale, pad + (maxY - pts[n][1]) * scale];
+  const g = new GeoPicture();
+  const V = (n: string) => pts[n];
+  const [A, B, C] = [...names].map(V);
+  const G = centroid(A, B, C);
+  g.poly([A, B, C], { width: 2, fill: 'currentColor', fillOpacity: 0.04 });
+  const others = (n: string) => [...names].filter((m) => m !== n).map(V) as [Pt, Pt];
 
-  const [a, b, c] = [...names].map((n) => P[n]);
-  const centroid: Pt = [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3];
-  const unit = (from: Pt, to: Pt): Pt => {
-    const d = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
-    return [(to[0] - from[0]) / d, (to[1] - from[1]) / d];
-  };
-
-  let body = path(`M${round(a[0])},${round(a[1])} L${round(b[0])},${round(b[1])} L${round(c[0])},${round(c[1])} Z`, {
-    'stroke-width': 2, 'stroke-linejoin': 'round', fill: INK, 'fill-opacity': 0.04,
-  });
-
-  // Right-angle square.
   if (rightAt) {
-    const i = names.indexOf(rightAt);
-    const v = P[rightAt], p = P[names[(i + 1) % 3]], q = P[names[(i + 2) % 3]];
-    const [ux, uy] = unit(v, p), [wx, wy] = unit(v, q);
-    const s = 13;
-    body += path(
-      `M${round(v[0] + ux * s)},${round(v[1] + uy * s)} L${round(v[0] + (ux + wx) * s)},${round(v[1] + (uy + wy) * s)} L${round(v[0] + wx * s)},${round(v[1] + wy * s)}`,
-      { 'stroke-width': 1.3 },
-    );
+    const [p, q] = others(rightAt);
+    g.rightAngle(V(rightAt), p, q);
   }
-
-  // Angle arcs with labels.
   for (const [n, label] of Object.entries(angles)) {
-    const i = names.indexOf(n);
-    const v = P[n], p = P[names[(i + 1) % 3]], q = P[names[(i + 2) % 3]];
-    const [ux, uy] = unit(v, p), [wx, wy] = unit(v, q);
-    const r = 24;
-    const sweep = ux * wy - uy * wx > 0 ? 1 : 0;
-    body += path(`M${round(v[0] + ux * r)},${round(v[1] + uy * r)} A${r},${r} 0 0 ${sweep} ${round(v[0] + wx * r)},${round(v[1] + wy * r)}`, { 'stroke-width': 1.3 });
-    const [bx, by] = unit([0, 0], [ux + wx, uy + wy]);
-    const shown = /^[\d.]+$/.test(label) ? `${label}°` : label;
-    body += text(v[0] + bx * (r + 16), v[1] + by * (r + 16) + 5, shown, { 'font-size': 13, 'text-anchor': 'middle' });
+    const [p, q] = others(n);
+    g.angle(V(n), p, q, { label: /^[\d.]+$/.test(label) ? `${label}°` : label });
   }
-
-  // Side labels, pushed away from the opposite vertex.
   for (const [key, label] of Object.entries(sides)) {
-    const p = P[key[0]], q = P[key[1]];
-    const mid: Pt = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
-    const [ox, oy] = unit(centroid, mid);
-    body += text(mid[0] + ox * 16, mid[1] + oy * 16 + 5, label, { 'font-size': 14, 'text-anchor': 'middle', 'font-style': 'italic' });
+    g.label(mid(V(key[0]), V(key[1])), label, { away: G, size: 14 });
   }
 
-  // Vertex names, pushed outwards.
-  for (const n of names) {
-    const [ox, oy] = unit(centroid, P[n]);
-    body += text(P[n][0] + ox * 16, P[n][1] + oy * 16 + 6, n, { 'font-size': 17, 'text-anchor': 'middle', 'font-style': 'italic' });
+  // Lines from a vertex (or from all three).
+  for (const f of features) {
+    if (!['altitude', 'median', 'bisector'].includes(f.kind)) continue;
+    const from = f.from && names.toUpperCase().includes(f.from.toUpperCase()) ? names[names.toUpperCase().indexOf(f.from.toUpperCase())] : null;
+    for (const n of from ? [from] : [...names]) {
+      const v = V(n), [p, q] = others(n);
+      const color = f.kind === 'altitude' ? COLORS[1] : f.kind === 'median' ? COLORS[2] : COLORS[4];
+      if (f.kind === 'altitude') {
+        const h = foot(v, p, q);
+        g.segment(v, h, { color, width: 1.5, dashed: true });
+        // Extend the base if the foot falls outside it (obtuse triangles).
+        const t = (h[0] - p[0]) * (q[0] - p[0]) + (h[1] - p[1]) * (q[1] - p[1]);
+        const L = (q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2;
+        if (t < 0) g.segment(p, h, { dashed: true, width: 1, opacity: 0.6 });
+        if (t > L) g.segment(q, h, { dashed: true, width: 1, opacity: 0.6 });
+        g.rightAngle(h, v, dist(h, p) > 1e-9 ? p : q, color);
+      } else if (f.kind === 'median') {
+        const m = mid(p, q);
+        g.segment(v, m, { color, width: 1.5 });
+        g.ticks(p, m, 1, color);
+        g.ticks(m, q, 1, color);
+      } else {
+        const d = add(unit(sub(p, v)), unit(sub(q, v)));
+        const hit = intersect(v, d, p, sub(q, p));
+        if (hit) {
+          g.segment(v, hit, { color, width: 1.5 });
+          g.angle(v, p, hit, { color, r: 0 });
+          g.angle(v, hit, q, { color, r: 0 });
+        }
+      }
+    }
   }
-  return svg(width, height, body, `Triangle ${names}`);
+  // Centres.
+  for (const f of features) {
+    if (f.kind === 'centroid') { g.dot(G, 3.5, COLORS[2]); g.label(G, 'G', { color: COLORS[2] }); }
+    if (f.kind === 'orthocenter') {
+      const h = orthocenter(A, B, C);
+      if (h) { g.dot(h, 3.5, COLORS[1]); g.label(h, 'H', { color: COLORS[1] }); }
+    }
+    if (f.kind === 'circumcircle') {
+      const c = circumcircle(A, B, C);
+      if (c) { g.circle(c.o, c.r, { color: COLORS[0], width: 1.4 }); g.dot(c.o, 3.5, COLORS[0]); g.label(c.o, 'O', { color: COLORS[0] }); }
+    }
+    if (f.kind === 'incircle') {
+      const c = incircle(A, B, C);
+      g.circle(c.o, c.r, { color: COLORS[3], width: 1.4 });
+      g.dot(c.o, 3.5, COLORS[3]);
+      g.label(c.o, 'I', { color: COLORS[3] });
+    }
+  }
+  for (const n of names) g.label(V(n), n, { away: G, size: 17, offset: 16 });
+  return g.render(`Triangle ${names}`, 340, 260);
 }
+

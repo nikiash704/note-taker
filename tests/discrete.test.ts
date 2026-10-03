@@ -42,3 +42,21 @@ describe('probability answers', () => {
   it('strict inequality skips the endpoint', () => expect(suggestFor('/dist binomial n=10 p=0.5; shade < 3')).toEqual(['P = 0.0547']));
   it('synonym fills in the family', () => expect(suggestFor('/normal 100 15; shade > 130')).toEqual(['P = 0.0228']));
 });
+
+describe('geometry', () => {
+  it('reads the angle value', () => {
+    const out = runFigure('/angle ABC = 40°').output;
+    expect(out.ok && out.svg).toContain('40°');
+  });
+  it('symbolic angle and bisector', () => {
+    expect(runFigure('/angle PQR = α bisector').output.ok).toBe(true);
+    expect(runFigure('/angle 90').output.ok).toBe(true);
+  });
+  it('parallel-line angles are suggested', () => {
+    expect(suggestFor('/parallel angle=70')).toEqual(['= 1: 70°, 2: 110°, 3: 70°, 4: 110°, 5: 70°, 6: 110°, 7: 70°, 8: 110°']);
+  });
+  it('construction errors are hints', () => {
+    const out = runFigure('/construct A=(0,0)\n  + segment AZ').output;
+    expect(!out.ok && out.hint).toContain('Z');
+  });
+});
